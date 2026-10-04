@@ -83,6 +83,8 @@
         Analyze Resume
       </button>
 
+      <div id="errorMessage" class="hidden mt-4 rounded-xl border border-red-400/50 bg-red-500/10 p-3 text-sm text-red-200"></div>
+
     </div>
 
     <!-- RESULTS -->
@@ -95,43 +97,70 @@
 
         <!-- SKILL MATCH -->
 
-        <div class="bg-slate-900 p-5 rounded-2xl shadow-xl h-[300px]">
+        <div class="bg-slate-900 p-5 rounded-2xl shadow-xl min-h-[330px]">
 
-          <h2 class="text-lg font-semibold mb-4 text-cyan-300">
-            Skill Match
-          </h2>
+            <h2 class="text-lg font-semibold mb-4 text-cyan-300">
+                Skill Match
+            </h2>
 
-          <div class="h-[200px]">
-            <canvas id="skillsChart"></canvas>
+            <div class="h-[180px] relative overflow-hidden">
+                <canvas id="skillsChart" class="w-full h-full"></canvas>
+            </div>
+
+            <div
+            id="skillStats"
+            class="mt-6 flex gap-4">
           </div>
 
         </div>
 
         <!-- MISSING SKILLS -->
 
-        <div class="bg-slate-900 p-5 rounded-2xl shadow-xl h-[300px]">
+          <div class="bg-slate-900 p-5 rounded-2xl shadow-xl min-h-[420px] flex flex-col">
 
-          <h2 class="text-lg font-semibold mb-4 text-red-300">
-            Missing Skills
-          </h2>
+              <h2 class="text-lg font-semibold text-red-300 mb-4">
+                  Missing Skills
+              </h2>
 
-          <div class="h-[200px]">
-            <canvas id="missingSkillsChart"></canvas>
+              <div
+                  id="missingSkillsBadges"
+                  class="flex flex-wrap gap-2">
+
+              </div>
+
           </div>
-
-        </div>
 
         <!-- RESUME STRENGTH -->
 
-        <div class="bg-slate-900 p-5 rounded-2xl shadow-xl h-[300px]">
+        <div class="bg-slate-900 p-5 rounded-2xl shadow-xl min-h-[420px] flex flex-col">
 
           <h2 class="text-lg font-semibold mb-4 text-green-300">
             Resume Strength
           </h2>
 
-          <div class="h-[200px] flex items-center justify-center">
-            <canvas id="strengthChart"></canvas>
-          </div>
+          <div class="relative h-[200px] flex items-center justify-center overflow-hidden">
+
+    <canvas id="strengthChart" class="w-full h-full"></canvas>
+
+    <div
+        id="scoreOverlay"
+        class="absolute text-center">
+
+        <h1
+            id="scoreValue"
+            class="text-4xl font-bold text-green-400 leading-none">
+            0%
+        </h1>
+
+        <p
+            id="scoreStatus"
+            class="text-sm text-gray-300 mt-2">
+            Loading...
+        </p>
+
+    </div>
+
+</div>
 
         </div>
 

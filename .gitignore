@@ -1,22 +1,22 @@
-# Node
+z# Environment variables
+.env
+.env.local
+.env.production
+
+# Dependencies
 node_modules/
 
 # Uploaded resumes
 uploads/
 
-# API keys
-.env
-
 # Python cache
 __pycache__/
 *.pyc
 
-# VS Code settings
-.vscode/
+# Logs
+*.log
+npm-debug.log*
 
 # OS files
 .DS_Store
 Thumbs.db
-
-# Logs
-*.log

@@ -4,6 +4,57 @@ const analyzeBtn =
 const resultDiv =
   document.getElementById("result");
 
+const errorDiv =
+  document.getElementById("errorMessage");
+
+const loadingButtonHtml = `
+<div class="flex items-center justify-center gap-2">
+    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+    </svg>
+    <span>Analyzing Resume...</span>
+</div>
+`;
+
+const resetButton = () => {
+  analyzeBtn.disabled = false;
+  analyzeBtn.innerHTML = "🔍 Analyze Resume";
+};
+
+const showError = (message) => {
+  errorDiv.textContent = message;
+  errorDiv.classList.remove("hidden");
+};
+
+const clearError = () => {
+  errorDiv.textContent = "";
+  errorDiv.classList.add("hidden");
+};
+
+const setLoading = (isLoading) => {
+  analyzeBtn.disabled = isLoading;
+  analyzeBtn.innerHTML = isLoading
+    ? loadingButtonHtml
+    : "🔍 Analyze Resume";
+};
+
+const escapeHtml = (value) =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+const cleanSuggestion = (value) =>
+  String(value ?? "")
+    .replace(/\*\*/g, "")
+    .replace(/^\s*[-*]\s+/gm, "")
+    .replace(/^\s*\d+\.\s+/gm, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
 // =========================
 // ANALYZE BUTTON
 // =========================
@@ -12,10 +63,7 @@ analyzeBtn.addEventListener(
   "click",
   async function () {
 
-    // Hide old results
-    resultDiv.classList.add("hidden");
-
-    // Inputs
+    clearError();
 
     const jobDescription =
       document
@@ -29,25 +77,20 @@ analyzeBtn.addEventListener(
     const file =
       fileInput.files[0];
 
-    // =========================
-    // VALIDATION
-    // =========================
-
     if (!file) {
-
-      alert("Please upload resume.");
-
+      showError("Please upload a resume file.");
       return;
-
     }
 
     if (!jobDescription) {
-
-      alert("Please enter job description.");
-
+      showError("Please paste a job description.");
       return;
-
     }
+
+    const uploadUrl =
+      window.location.port === "5000"
+        ? "/upload"
+        : "http://localhost:5000/upload";
 
     // =========================
     // FORM DATA
@@ -72,41 +115,33 @@ analyzeBtn.addEventListener(
       // FETCH API
       // =========================
 
-const response = await fetch(
-  "http://localhost:5000/upload",
-  {
-    method: "POST",
-    body: formData
-  }
-);
+      const response = await fetch(uploadUrl, {
+        method: "POST",
+        body: formData
+      });
 
-      // Parse response
-
-      const data =
-        await response.json();
-
-      // =========================
-      // BACKEND ERROR
-      // =========================
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        throw new Error("Invalid response from server.");
+      }
 
       if (!response.ok) {
-
-        alert(
-          data.error ||
-          "Backend Error"
+        throw new Error(
+          data?.error || response.statusText || "Backend Error"
         );
-
-        return;
-
       }
 
       // =========================
       // SHOW RESULTS
       // =========================
 
-      resultDiv.classList.remove(
-        "hidden"
-      );
+      resultDiv.classList.remove("hidden");
+      resultDiv.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
 
       // =========================
       // FILE INFO
@@ -148,7 +183,7 @@ const response = await fetch(
             text-xs font-medium border
             ${color}
           ">
-            ${skill}
+            ${escapeHtml(skill)}
           </span>
 
         `).join("");
@@ -192,17 +227,34 @@ const response = await fetch(
       // ATS READABILITY
       // =========================
 
-      document.getElementById(
-        "atsReadability"
-      ).innerHTML = `
+      let ats=data.ats_readability;
 
-        <div class="
-          text-4xl
-          font-bold
-          text-green-400
-        ">
-          ${data.ats_readability}%
-        </div>
+      let label="";
+
+      if(ats>=90)
+      label="Excellent";
+
+      else if(ats>=75)
+      label="Good";
+
+      else
+      label="Needs Improvement";
+
+      document.getElementById("atsReadability").innerHTML=`
+
+      <div class="text-4xl font-bold text-green-400">
+
+      ${ats}%
+
+      </div>
+
+
+
+      <p class="text-green-300 mt-2">
+
+      ${label}
+
+      </p>
 
       `;
 
@@ -225,7 +277,7 @@ const response = await fetch(
               text-red-300 space-y-2
             ">
               ${issues.map(issue => `
-                <li>${issue}</li>
+                <li>${escapeHtml(issue)}</li>
               `).join("")}
             </ul>
           `
@@ -257,7 +309,7 @@ const response = await fetch(
             </h3>
 
             <p class="text-sm">
-              ${data.found_skills.join(", ")}
+              ${escapeHtml(data.found_skills.join(", ") || "No skills detected")}
             </p>
 
           </div>
@@ -273,7 +325,7 @@ const response = await fetch(
             </h3>
 
             <p class="text-sm">
-              ${data.missing_skills.join(", ")}
+              ${escapeHtml(data.missing_skills.join(", ") || "No missing skills detected")}
             </p>
 
           </div>
@@ -287,30 +339,58 @@ const response = await fetch(
       // =========================
 
       const suggestionsArray =
+      Array.isArray(data.suggestions)
+      ? data.suggestions
+      : [];
 
-        Array.isArray(data.suggestions)
-          ? data.suggestions
-          : [];
+      document.getElementById("suggestions").innerHTML = `
 
-      document.getElementById(
-        "suggestions"
-      ).innerHTML = `
+      <h3 class="text-xl font-bold text-cyan-300 mb-5">
 
-        <h3 class="
-          text-xl font-bold mb-4
-          text-cyan-300
-        ">
-          AI Suggestions
-        </h3>
+      🤖 AI Suggestions
 
-        <ul class="
-          list-disc list-inside
-          space-y-2 text-gray-300
-        ">
-          ${suggestionsArray.map(item => `
-            <li>${item}</li>
-          `).join("")}
-        </ul>
+      </h3>
+
+      <div class="space-y-4">
+
+      ${suggestionsArray.length ?
+
+      suggestionsArray.map((item, index) => `
+
+      <div class="border-l-4 border-cyan-500 bg-cyan-500/10 rounded-xl p-4 shadow-md hover:bg-cyan-500/20 transition">
+
+      <div class="flex items-center gap-2">
+
+
+      <h4 class="font-semibold text-cyan-300">
+
+      Suggestion ${index + 1}
+
+      </h4>
+
+      </div>
+
+      <p class="text-gray-300 mt-3 leading-relaxed">
+
+      ${escapeHtml(cleanSuggestion(item)).replace(/\n/g, "<br>")}
+
+      </p>
+
+      </div>
+
+      `).join("")
+
+      :
+
+      `<p class="text-green-400">
+
+      No suggestions. Resume looks good.
+
+      </p>`
+
+      }
+
+      </div>
 
       `;
 
@@ -318,21 +398,11 @@ const response = await fetch(
       // DESTROY OLD CHARTS
       // =========================
 
-      if (
-        window.skillsChartInstance
-      ) {
+      if (window.skillsChartInstance) {
         window.skillsChartInstance.destroy();
       }
 
-      if (
-        window.missingChartInstance
-      ) {
-        window.missingChartInstance.destroy();
-      }
-
-      if (
-        window.strengthChartInstance
-      ) {
+      if (window.strengthChartInstance) {
         window.strengthChartInstance.destroy();
       }
 
@@ -346,15 +416,11 @@ const response = await fetch(
 
         maintainAspectRatio: false,
 
-        plugins: {
+        plugins:{
 
-          legend: {
-
-            labels: {
-              color: "white"
-            }
-
-          }
+        legend:{
+        display:false
+        }
 
         }
 
@@ -375,16 +441,20 @@ const response = await fetch(
 
             data: {
 
-              labels: [
-                "Found",
-                "Missing"
-              ],
+            labels:[
+            "Matched Skills",
+            "Missing Skills"
+            ],
 
               datasets: [{
 
                 data: [
 
-                  data.found_skills.length,
+                  Math.max(
+                    0,
+                    (data.required_skills || []).length -
+                      (data.missing_skills || []).length
+                  ),
 
                   data.missing_skills.length
 
@@ -408,60 +478,110 @@ const response = await fetch(
           }
         );
 
+        const foundCount = Math.max(
+          0,
+          (data.required_skills || []).length -
+            (data.missing_skills || []).length
+        );
+const missingCount = data.missing_skills.length;
+
+document.getElementById("skillStats").innerHTML = `
+
+<div class="flex-1 bg-green-500/10 border border-green-500/30 rounded-xl p-4 text-center">
+
+    <div class="text-4xl mb-2">✅</div>
+
+    <div class="text-sm text-gray-400">
+        Found Skills
+    </div>
+
+    <div class="text-4xl font-bold text-green-400 mt-2">
+        ${foundCount}
+    </div>
+
+</div>
+
+<div class="flex-1 bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-center">
+
+    <div class="text-4xl mb-2">❌</div>
+
+    <div class="text-sm text-gray-400">
+        Missing Skills
+    </div>
+
+    <div class="text-4xl font-bold text-red-400 mt-2">
+        ${missingCount}
+    </div>
+
+</div>
+
+`;
+
+        analyzeBtn.disabled = false;
+
+      analyzeBtn.innerHTML = `
+      🔍 Analyze Resume
+      `;
+
       // =========================
       // MISSING SKILLS CHART
       // =========================
 
-      window.missingChartInstance =
-        new Chart(
-          document.getElementById(
-            "missingSkillsChart"
-          ),
-          {
+        document.getElementById("missingSkillsBadges").innerHTML =
+        data.missing_skills.length
+        ?
+        data.missing_skills.map(skill=>`
 
-            type: "doughnut",
+        <span class="
+        px-3
+        py-2
+        rounded-full
+        bg-red-500/20
+        border
+        border-red-400
+        text-red-300
+        font-medium">
 
-            data: {
+        ${escapeHtml(skill)}
 
-              labels:
+        </span>
 
-                data.missing_skills.length
-                  ? data.missing_skills
-                  : ["No Missing Skills"],
-
-              datasets: [{
-
-                data:
-
-                  data.missing_skills.length
-                    ? data.missing_skills.map(() => 1)
-                    : [1],
-
-                backgroundColor: [
-
-                  "#ef4444",
-                  "#f97316",
-                  "#eab308",
-                  "#8b5cf6",
-                  "#06b6d4"
-
-                ]
-
-              }]
-
-            },
-
-            options: commonOptions
-
-          }
-        );
+        `).join("")
+        :
+        `
+        <span class="text-green-400">
+        No Missing Skills
+        </span>
+        `;
 
       // =========================
       // STRENGTH CHART
       // =========================
 
-      const score =
-        parseFloat(data.score || 0);
+      let score = parseFloat(data.score || 0);
+      if (!Number.isFinite(score)) {
+        score = 0;
+      }
+      score = Math.max(0, Math.min(100, score));
+
+      document.getElementById("scoreValue").innerHTML =
+        `${score}%`;
+
+      let status = "";
+
+      if (score >= 85)
+        status = "Excellent Match";
+      else if (score >= 70)
+        status = "Good Match";
+      else if (score >= 50)
+        status = "Average Match";
+      else
+        status = "Needs Improvement";
+
+      document.getElementById("scoreStatus").innerHTML =
+        status;
+
+      const chartScore = score;
 
       window.strengthChartInstance =
         new Chart(
@@ -475,6 +595,7 @@ const response = await fetch(
             data: {
 
               datasets: [{
+              label: "",
 
                 data: [
 
@@ -520,13 +641,11 @@ const response = await fetch(
     }
 
     catch (error) {
-
       console.error(error);
-
-      alert(
-        "Server or backend unavailable."
-      );
-
+      showError(error.message || "Unable to reach the backend.");
+    }
+    finally {
+      setLoading(false);
     }
 
   }
