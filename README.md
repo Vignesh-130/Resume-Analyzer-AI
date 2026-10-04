@@ -30,6 +30,30 @@ An AI-powered web application that analyzes resumes against specific job descrip
 
 ---
 
+## 📸 Application Screenshots
+
+### 🏠 Dashboard
+
+![Dashboard](screenshots/dashboard.png)
+
+### 📊 ATS Analysis Results
+
+![ATS Analysis Results](screenshots/ats-results.png)
+
+### 🧠 Skills Analysis
+
+![Skills Analysis](screenshots/skills-analysis.png)
+
+### 🤖 AI-Powered Suggestions
+
+![AI Suggestions](screenshots/ai-suggestions.png)
+
+### 🎯 Score Analysis
+
+![Score Analysis](screenshots/score-analysis.png)
+
+---
+
 ## 🎯 Project Overview
 
 The AI-Powered Smart Hiring Assistant is designed to help job seekers understand how well their resume matches a specific job description.
