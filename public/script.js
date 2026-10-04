@@ -87,10 +87,7 @@ analyzeBtn.addEventListener(
       return;
     }
 
-    const uploadUrl =
-      window.location.port === "5000"
-        ? "/upload"
-        : "http://localhost:5000/upload";
+    const uploadUrl = "/upload";
 
     // =========================
     // FORM DATA
